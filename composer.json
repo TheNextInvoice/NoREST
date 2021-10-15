@@ -8,6 +8,14 @@
     {
       "name": "Jur van den Berg",
       "email": "jur@vdberg.io"
+    },
+    {
+      "name": "Joram Kruijer",
+      "email": "j.kruijer@gmail.com"
+    },
+    {
+      "name": "Joost Heitbrink",
+      "email": "joost@heitbrink.eu"
     }
   ],
   "autoload": {

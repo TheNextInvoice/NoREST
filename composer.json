@@ -1,0 +1,25 @@
+{
+  "name": "thenextinvoice/norest",
+  "license": "LGPL v2.1",
+  "description": "NOva REST for the wicked",
+  "type": "library",
+  "version": "1.0.0",
+  "authors": [
+    {
+      "name": "Jur van den Berg",
+      "email": "jur@vdberg.io"
+    }
+  ],
+  "autoload": {
+    "psr-4": {
+      "TheNextInvoice\\NoREST\\": "src/"
+    }
+  },
+  "require": {
+    "php": ">= 7.3",
+    "ext-curl": "*",
+    "ext-json": "*"
+  },
+  "require-dev": {
+  }
+}

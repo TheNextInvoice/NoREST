@@ -201,6 +201,7 @@ class Client
             CURLOPT_URL => $combinedUrl,
             CURLOPT_HEADER => false,
             CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_ENCODING => '',
         ];
 
         if ($method === 'POST') {

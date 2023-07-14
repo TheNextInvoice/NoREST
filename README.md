@@ -49,3 +49,16 @@ $client->post('/endpoint');
 // but this will
 $client->post('/endpoint', []);
 ```
+
+### JSON flags
+When you're working with JSON payloads and have to deal with non-standard or just specific data,
+NoREST has you covered by allowing you to specify JSON flags that NoREST will use when encoding and decoding
+JSON payloads.
+If you for example, don't want to escape slashes `/` and also want to convert tags `<`, `>` to unicode, you
+should do this:
+```php
+// Construct client with JSON flags
+$client = new \TheNextInvoice\NoREST\Client('https//api.example.com', [], [JSON_UNESCAPED_SLASHES, JSON_HEX_TAG]);
+```
+All requests made with a client constructed this way will have `JSON_UNESCAPED_SLASHES` and `JSON_HEX_TAG` JSON flags
+applied when encoding AND decoding the request and response body respectively.

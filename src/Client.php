@@ -1,22 +1,22 @@
 <?php
 /**
-    NoREST: a super simple REST client for PHP
-    Copyright (C) 2018-2021  TheNextInvoice B.V.
+NoREST: a super simple REST client for PHP
+Copyright (C) 2018-2021  TheNextInvoice B.V.
 
-    This library is free software; you can redistribute it and/or
-    modify it under the terms of the GNU Lesser General Public
-    License as published by the Free Software Foundation; either
-    version 2.1 of the License, or (at your option) any later version.
+This library is free software; you can redistribute it and/or
+modify it under the terms of the GNU Lesser General Public
+License as published by the Free Software Foundation; either
+version 2.1 of the License, or (at your option) any later version.
 
-    This library is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-    Lesser General Public License for more details.
+This library is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+Lesser General Public License for more details.
 
-    You should have received a copy of the GNU Lesser General Public
-    License along with this library; if not, write to the Free Software
-    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
+You should have received a copy of the GNU Lesser General Public
+License along with this library; if not, write to the Free Software
+Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ */
 
 namespace TheNextInvoice\NoREST;
 
@@ -39,6 +39,11 @@ class Client
         'application/x-www-form-urlencoded',
         'multipart/form-data',
     ];
+
+    /**
+     * @var int[]
+     */
+    protected $jsonFlags;
 
     /**
      * Base URL for api.
@@ -68,9 +73,11 @@ class Client
      * If no headers are passed, the default content type is set to
      * application/json
      * @param string $base The base URL for making requests
-     * @param array|null $headers
+     * @param array<string, string>|null $headers
+     * @param int[] $jsonFlags Options to pass to json_encode and json_decode. Used only if content-type is
+     *                              'application/json'
      */
-    public function __construct($base, $headers = null)
+    public function __construct(string $base, ?array $headers = null, array $jsonFlags = [])
     {
         $this->baseUrl = $base;
         if ($headers === null) {
@@ -80,6 +87,7 @@ class Client
         }
 
         $this->headers = $headers;
+        $this->jsonFlags = array_unique($jsonFlags);
     }
 
     /**
@@ -95,7 +103,7 @@ class Client
      */
     public function setBaseUrl(string $base): self
     {
-        return new self($base, $this->headers);
+        return new self($base, $this->headers, $this->jsonFlags);
     }
 
     /**
@@ -109,7 +117,7 @@ class Client
         $type = strtolower($type);
         if (!in_array($type, self::SUPPORTED_CONTENT_TYPES, true)) {
             throw new \InvalidArgumentException("Unsupported content type: {$type}");
-        };
+        }
         return $this->addHeader(self::CONTENT_TYPE_HEADER, $type);
     }
 
@@ -142,7 +150,18 @@ class Client
         }
 
         $newHeaders[$header] = $value;
-        return new self($this->baseUrl, $newHeaders);
+        return new self($this->baseUrl, $newHeaders, $this->jsonFlags);
+    }
+
+    /**
+     * Set flags to be used for json_encode and json_decode. Returns a new instance
+     *
+     * @param int[] $flags Flags to be used with json_encode/json_decode
+     * @return Client new instance with the new flags
+     */
+    public function setJsonFlags(array $flags): self
+    {
+        return new self($this->baseUrl, $this->headers, $flags);
     }
 
     /**
@@ -182,6 +201,7 @@ class Client
             CURLOPT_URL => $combinedUrl,
             CURLOPT_HEADER => false,
             CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_ENCODING => '',
         ];
 
         if ($method === 'POST') {
@@ -282,7 +302,7 @@ class Client
     {
         switch ($this->headers[self::CONTENT_TYPE_HEADER]) {
             case 'application/json':
-                return json_encode($body, JSON_THROW_ON_ERROR, 512);
+                return json_encode($body, JSON_THROW_ON_ERROR | $this->reduceFlags($this->jsonFlags), 512);
             case 'application/xml':
             case 'text/plain':
                 return $body;
@@ -291,6 +311,24 @@ class Client
             default:
                 throw new \InvalidArgumentException("Unsupported content type: {$this->headers[self::CONTENT_TYPE_HEADER]}");
         }
+    }
+
+    /**
+     * Reduce configured json flags by performing bitwise OR on the flags.
+     * The result may safely be used as the flags parameter for json_encode/json_decode
+     *
+     * @param int[] $flags
+     * @return int
+     */
+    private function reduceFlags(array $flags): int
+    {
+        return (int)array_reduce(
+            $flags,
+            static function ($carry, $flag) {
+                return $carry | $flag;
+            },
+            reset($flags)
+        );
     }
 
     /**
@@ -376,7 +414,7 @@ class Client
             case 'application/hal+json':
             case 'application/json':
             case 'text/json':
-                return json_decode($body, true, 512, JSON_THROW_ON_ERROR);
+                return json_decode($body, true, 512, JSON_THROW_ON_ERROR | $this->reduceFlags($this->jsonFlags));
             case 'application/x-www-form-urlencoded':
                 $result = [];
                 parse_str($body, $result);

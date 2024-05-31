@@ -3,7 +3,7 @@
   "license": "LGPL v2.1",
   "description": "NOva REST for the wicked",
   "type": "library",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "authors": [
     {
       "name": "Jur van den Berg",

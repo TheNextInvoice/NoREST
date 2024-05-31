@@ -28,11 +28,11 @@ use TheNextInvoice\NoREST\Exceptions\RequestFailedException;
  */
 class Client
 {
-    const NO_LOWERCASE_HEADERS = 'nolowercase';
+    public const NO_LOWERCASE_HEADERS = 'nolowercase';
 
-    const CONTENT_TYPE_HEADER = 'content-type';
+    protected const CONTENT_TYPE_HEADER = 'content-type';
 
-    const SUPPORTED_CONTENT_TYPES = [
+    protected const SUPPORTED_CONTENT_TYPES = [
         'application/json',
         'application/xml',
         'text/plain',

@@ -1,6 +1,6 @@
 {
   "name": "thenextinvoice/norest",
-  "license": "LGPL v2.1",
+  "license": "LGPL-2.1-only",
   "description": "NOva REST for the wicked",
   "type": "library",
   "version": "1.1.0",

@@ -226,7 +226,7 @@ class Client
                 CURLOPT_CUSTOMREQUEST => $method,
                 CURLOPT_POSTFIELDS => $data,
             ];
-        } elseif ($method === 'PUT') {
+        } elseif ($method === 'PUT' || $method === 'PATCH') {
             if (!is_array($payload) && !is_object($payload)) {
                 throw new \InvalidArgumentException('Client: Missing or invalid payload');
             }

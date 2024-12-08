@@ -493,4 +493,20 @@ class Client
     {
         return $this->sendRequest($url, 'POST', $payload);
     }
+
+    /**
+     * Makes a PATCH request.
+     *
+     * @param string $url URL
+     * @param mixed $payload Body
+     * @return mixed Decoded data according to what the server returns. Do not make any assumptions on this data
+     * and be especially careful when handling strings, since PHP makes no difference between a well-formed string and
+     * binary data returned such as with image data.
+     * @throws RequestFailedException If the request fails for any reason
+     * @throws \JsonException
+     */
+    public function patch(string $url, $payload)
+    {
+        return $this->sendRequest($url, 'PATCH', $payload);
+    }
 }

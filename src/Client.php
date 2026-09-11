@@ -35,6 +35,7 @@ class Client
     protected const SUPPORTED_CONTENT_TYPES = [
         'application/json',
         'application/xml',
+        'application/atom+xml',
         'text/plain',
         'application/x-www-form-urlencoded',
         'multipart/form-data',
@@ -205,7 +206,7 @@ class Client
         ];
 
         if ($method === 'POST') {
-            if (!is_array($payload) && !is_object($payload)) {
+            if (!is_array($payload) && !is_object($payload) && !is_string($payload)) {
                 throw new \InvalidArgumentException('Client: Missing or invalid payload');
             }
 
@@ -227,7 +228,7 @@ class Client
                 CURLOPT_POSTFIELDS => $data,
             ];
         } elseif ($method === 'PUT' || $method === 'PATCH') {
-            if (!is_array($payload) && !is_object($payload)) {
+            if (!is_array($payload) && !is_object($payload) && !is_string($payload)) {
                 throw new \InvalidArgumentException('Client: Missing or invalid payload');
             }
 
@@ -303,6 +304,7 @@ class Client
         switch ($this->headers[self::CONTENT_TYPE_HEADER]) {
             case 'application/json':
                 return json_encode($body, JSON_THROW_ON_ERROR | $this->reduceFlags($this->jsonFlags), 512);
+            case 'application/atom+xml':
             case 'application/xml':
             case 'text/plain':
                 return $body;
@@ -419,6 +421,7 @@ class Client
                 $result = [];
                 parse_str($body, $result);
                 return $result;
+            case 'application/atom+xml':
             case 'application/xml':
             case 'text/xml':
             case 'application/pdf':

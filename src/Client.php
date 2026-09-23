@@ -129,7 +129,9 @@ class Client
         $headers += [self::CONTENT_TYPE_HEADER => 'application/json'];
 
         $this->headers = $headers;
-        $this->jsonFlags = array_unique($jsonFlags);
+        // No need to de-duplicate: reduceFlags() only ever bitwise-ORs these together, and
+        // duplicate flags don't change the result of a bitwise OR.
+        $this->jsonFlags = $jsonFlags;
         $this->timeout = $timeout;
         $this->connectTimeout = $connectTimeout;
     }
@@ -325,7 +327,7 @@ class Client
             // content type is. Code taken from
             // https://stackoverflow.com/questions/9183178/can-php-curl-retrieve-response-headers-and-body-in-a-single-request#41135574
             CURLOPT_HEADERFUNCTION =>
-                static function ($curl, $header) use (&$responseHeaders) {
+                static function (CurlHandle $curl, string $header) use (&$responseHeaders): int {
                     $len = strlen($header);
                     $header = explode(':', $header, 2);
                     if (count($header) < 2) {
@@ -424,13 +426,11 @@ class Client
      */
     private function reduceFlags(array $flags): int
     {
-        return (int)array_reduce(
-            $flags,
-            static function ($carry, $flag) {
-                return $carry | $flag;
-            },
-            reset($flags)
-        );
+        $result = 0;
+        foreach ($flags as $flag) {
+            $result |= $flag;
+        }
+        return $result;
     }
 
     /**
@@ -468,10 +468,14 @@ class Client
      * If $uri is only a path segment, it prepends the BaseUrl
      *
      * @param string $uri request URL, either partial or full
-     * @return string
+     * @return non-empty-string
      */
     private function combineUrl(string $uri): string
     {
+        if ($uri === '') {
+            throw new InvalidArgumentException('Client: URI must not be empty');
+        }
+
         // Check if $uri is a full uri
         $parsed = parse_url($uri);
         if ($parsed !== false && isset($parsed['host'])) {

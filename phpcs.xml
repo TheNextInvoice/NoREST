@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<ruleset name="PSR12">
+    <description>TNI Style: opinionated PSR12</description>
+    <arg name="tab-width" value="4"/>
+    <!-- Include the whole PSR-12 standard -->
+    <rule ref="PSR12"/>
+
+    <!-- Use spaces instead of tabs to indent files -->
+    <rule ref="Generic.WhiteSpace.DisallowTabIndent"/>
+
+    <!-- Require strict_types declaration in all files -->
+    <rule ref="Generic.PHP.RequireStrictTypes">
+        <type>warning</type>
+    </rule>
+
+    <!-- Opinionated: use short array syntax [] instead of array() -->
+    <rule ref="Generic.Arrays.DisallowLongArraySyntax.Found">
+        <type>warning</type>
+    </rule>
+</ruleset>

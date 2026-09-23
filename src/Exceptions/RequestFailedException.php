@@ -1,6 +1,5 @@
 <?php
 
-declare(strict_types=1);
 /**
     NoREST: a super simple REST client for PHP
     Copyright (C) 2018-2026  TheNextInvoice B.V.
@@ -19,6 +18,8 @@ declare(strict_types=1);
     License along with this library; if not, write to the Free Software
     Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
+
+declare(strict_types=1);
 
 namespace TheNextInvoice\NoREST\Exceptions;
 

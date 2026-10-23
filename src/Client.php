@@ -71,7 +71,8 @@ class Client
     private string $baseUrl;
 
     /**
-     * Currently active request headers. Always contains a 'content-type' entry.
+     * Currently active request headers.
+     * Always contains exactly one 'content-type' entry, in any casing.
      *
      * @var array<string, string> as per RFC 7230
      */
@@ -124,11 +125,7 @@ class Client
         int $connectTimeout = self::DEFAULT_CONNECT_TIMEOUT
     ) {
         $this->baseUrl = $base;
-        $headers ??= [];
-        // No header provided, default to 'application/json'
-        $headers += [self::CONTENT_TYPE_HEADER => 'application/json'];
-
-        $this->headers = $headers;
+        $this->headers = self::normalizeHeaders($headers);
         // No need to de-duplicate: reduceFlags() only ever bitwise-ORs these together, and
         // duplicate flags don't change the result of a bitwise OR.
         $this->jsonFlags = $jsonFlags;
@@ -193,6 +190,14 @@ class Client
 
         if (!$noLowercaseHeaders) {
             $header = strtolower($header);
+        }
+
+        // Header names are case-insensitive (RFC 7230), so replace an existing
+        // header in a different casing instead of sending both
+        foreach (array_keys($newHeaders) as $existingHeader) {
+            if (strcasecmp($existingHeader, $header) === 0) {
+                unset($newHeaders[$existingHeader]);
+            }
         }
 
         $newHeaders[$header] = $value;
@@ -352,6 +357,7 @@ class Client
         }
         curl_setopt_array($curlHandle, $curlOptions);
         $responseBody = curl_exec($curlHandle);
+        $this->lastResponseHeaders = $responseHeaders;
         // curl_exec returns string on success or false on failure, as CURLOPT_RETURNTRANSFER is set to true.
         // The curl_errno check is intentionally redundant defense-in-depth: both (currently) read the same
         // underlying CURLcode of this curl_exec call, so they shouldn't disagree (verified empirically on PHP8.4,
@@ -359,7 +365,6 @@ class Client
         if (!is_string($responseBody) || curl_errno($curlHandle) !== 0) {
             $this->handleCurlError($curlHandle);
         }
-        $this->lastResponseHeaders = $responseHeaders;
 
         if (array_key_exists(self::CONTENT_TYPE_HEADER, $responseHeaders)) {
             $responseBody = $this->decodeBody($responseBody, $responseHeaders[self::CONTENT_TYPE_HEADER]);
@@ -368,7 +373,7 @@ class Client
         }
 
         $responseCode = curl_getinfo($curlHandle, CURLINFO_HTTP_CODE);
-        curl_close($curlHandle);
+        // No need to explicitely close the connection: curl_close() is NOP since php8.0
 
         if ($responseCode < 200 || $responseCode > 299) {
             $this->handleResponseError($responseCode, $responseBody, $responseHeaders);
@@ -434,13 +439,18 @@ class Client
     }
 
     /**
-     * The currently active 'content-type' header.
+     * The currently active 'content-type' header, in whatever casing it was set.
      * This is always present, either set explicitly or defaulted to in the constructor.
      */
     private function getContentType(): string
     {
-        return $this->headers[self::CONTENT_TYPE_HEADER]
-            ?? throw new LogicException('Client: missing content-type header, this should be unreachable');
+        foreach ($this->headers as $name => $value) {
+            if (strtolower($name) === self::CONTENT_TYPE_HEADER) {
+                return $value;
+            }
+        }
+
+        throw new LogicException('Client: missing content-type header, this should be unreachable');
     }
 
     /**
@@ -463,6 +473,35 @@ class Client
     }
 
     /**
+     * Normalize the headers: keep the caller's headers as passed, in their casing,
+     * as RFC 7230 is ignored by some servers.
+     * If content-type is passed in more than one casing, only the first is kept.
+     * Default to 'content-type: application/json' if no content-type is passed.
+     *
+     * @param array<string, string>|null $headers
+     * @return array<string, string>
+     */
+    private static function normalizeHeaders(?array $headers): array
+    {
+        $normalizedHeaders = [];
+        $hasContentType = false;
+        foreach ($headers ?? [] as $name => $value) {
+            if (strtolower($name) === self::CONTENT_TYPE_HEADER) {
+                if ($hasContentType) {
+                    continue;
+                }
+                $hasContentType = true;
+            }
+            $normalizedHeaders[$name] = $value;
+        }
+        // No content-type provided, default to 'application/json'
+        if (!$hasContentType) {
+            $normalizedHeaders[self::CONTENT_TYPE_HEADER] = 'application/json';
+        }
+        return $normalizedHeaders;
+    }
+
+    /**
      * Combines the Base URL and the URI fragment into a full URL.
      * If $uri is a full url itself, it returns $uri itself.
      * If $uri is only a path segment, it prepends the BaseUrl
@@ -472,8 +511,9 @@ class Client
      */
     private function combineUrl(string $uri): string
     {
+        // An empty URI targets the root of the base URL
         if ($uri === '') {
-            throw new InvalidArgumentException('Client: URI must not be empty');
+            return $this->baseUrl . '/';
         }
 
         // Check if $uri is a full uri
@@ -484,7 +524,7 @@ class Client
 
         // We seem to have only a segment, just append it to $baseUrl
         // Check if the fragment contains a slash prefix or not
-        $sep = strlen($uri) > 1 && $uri[0] === '/' ? '' : '/';
+        $sep = $uri[0] === '/' ? '' : '/';
         return $this->baseUrl . $sep . $uri;
     }
 

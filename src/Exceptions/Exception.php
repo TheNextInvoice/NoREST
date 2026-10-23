@@ -1,4 +1,5 @@
 <?php
+
 /**
     NoREST: a super simple REST client for PHP
     Copyright (C) 2018-2021  TheNextInvoice B.V.
@@ -18,7 +19,10 @@
     Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
+declare(strict_types=1);
+
 namespace TheNextInvoice\NoREST\Exceptions;
 
 class Exception extends \Exception
-{}
+{
+}
